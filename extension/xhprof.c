@@ -927,12 +927,12 @@ static void save_log(char *str_buff) {
     }
 }
 
-static void save_func_call(char *func_name, char *file_name) {
+static void save_func_call(char *func_name, char *file_name, int line) {
     char    *buff;
     char    *token_func_start = "FUNC_CALL";
 
-    buff = (char *)emalloc(strlen(func_name) + strlen(token_func_start) + strlen(file_name)+ 10);
-    sprintf (buff, "{%s}{%s}{%s}", token_func_start, func_name, file_name);
+    buff = (char *)emalloc(strlen(func_name) + strlen(token_func_start) + strlen(file_name) + 20); // fixme magic const
+    sprintf (buff, "{%s}{%s}{%s}{%i}", token_func_start, func_name, file_name, line);
     save_log(buff);
 }
 
@@ -984,6 +984,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
   char              *ret = NULL;
   char              *current_file_name = NULL;
   int                len;
+  int              is_need_parse = 1;
 
   const char        *filename;
 
@@ -993,10 +994,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
     int arg_count;
 	int i_args;
 
-	zend_execute_data *ex = EG(current_execute_data)->prev_execute_data;
-
-  data = EG(current_execute_data);
-
+    data = EG(current_execute_data);
 
     save_log("{__TICK__}"); // debug
 
@@ -1071,25 +1069,18 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
        * name to make the reports more useful. So rather than just "include"
        * you'll see something like "run_init::foo.php" in your reports.
        */
-      if (add_filename){
-        filename = hp_get_base_filename((curr_func->op_array).filename);
-        len      = strlen("run_init") + strlen(filename) + 3;
-        ret      = (char *)emalloc(len);
-        snprintf(ret, len, "run_init::%s", filename);
+      if (add_filename) {
+        is_need_parse = 0;
+        save_func_call(func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
       } else {
         ret = estrdup(func);
       }
     }
 
     // if not call debug func:
-    if (strcmp(ret, "xhprof_disable") != 0) {
-        // extract file name:
-        filename = hp_get_base_filename((curr_func->op_array).filename);
-        current_file_name = (char *)emalloc(strlen(filename)*2);
-        snprintf(current_file_name, strlen(filename) + 1, "%s", filename);
+    if (is_need_parse && strcmp(ret, "xhprof_disable") != 0) {
         // logger func call:
-        save_func_call(ret, current_file_name);
-        efree(current_file_name);
+       save_func_call(ret, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
 
         // extract arg of func
         p_args = data->function_state.arguments;
@@ -1752,7 +1743,6 @@ ZEND_DLEXPORT void hp_execute_ex (zend_execute_data *execute_data TSRMLS_DC) {
   char          *func = NULL;
   int hp_profile_flag = 1;
 
-
   func = hp_get_function_name(ops TSRMLS_CC);
   if (!func) {
 #if PHP_VERSION_ID < 50500
@@ -1969,6 +1959,9 @@ static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
 
     /* start profiling from fictitious main() */
     BEGIN_PROFILING(&hp_globals.entries, ROOT_SYMBOL, hp_profile_flag);
+
+    // entry point:
+    save_func_call("{ENTRY_POINT}", zend_get_executed_filename(TSRMLS_C), 0);
   }
 }
 
