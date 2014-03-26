@@ -11,3 +11,8 @@
 *.lai
 *.la
 *.a
+
+
+.idea/
+autom4te.cache
+build/
