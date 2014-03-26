@@ -1007,11 +1007,12 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
   const char        *func = NULL;
   const char        *cls = NULL;
   char              *ret = NULL;
-  char              *current_file_name = NULL;
+  char              *current_file_name = NULL; // файл, в котором данная ф-ия содержиться
   int                len;
   int              is_need_parse = 1;
 
   const char        *filename;
+  char              *file_of_call_func; // файл, из которого совершили вызов, для точки входа пусто
 
   zend_function      *curr_func;
 
@@ -1020,6 +1021,17 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
 	int i_args;
 
     data = EG(current_execute_data);
+
+    // extract file of previos call poit
+    zend_execute_data *ptr_ed = data->prev_execute_data;
+    if (ptr_ed != NULL) {
+        zend_function *prev_func = ptr_ed->function_state.function;
+        file_of_call_func = prev_func->op_array.filename;
+        //fprintf(stderr, "%s \n", prev_func->op_array.filename);
+    }
+    else {
+        file_of_call_func = "";
+    }
 
     //save_log("{__TICK__}"); // debug
 
@@ -1067,26 +1079,26 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
 
       switch (curr_op) {
         case ZEND_EVAL:
-          func = "eval";
+          func = "<eval />";
           break;
         case ZEND_INCLUDE:
-          func = "include";
+          func = "<include />";
           add_filename = 1;
           break;
         case ZEND_REQUIRE:
-          func = "require";
+          func = "<require />";
           add_filename = 1;
           break;
         case ZEND_INCLUDE_ONCE:
-          func = "include_once";
+          func = "<include_once />";
           add_filename = 1;
           break;
         case ZEND_REQUIRE_ONCE:
-          func = "require_once";
+          func = "<require_once />";
           add_filename = 1;
           break;
         default:
-          func = "???_op";
+          func = "<unknown_op />";
           break;
       }
 
@@ -1105,7 +1117,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
     // if not call debug func:
     if (is_need_parse && strcmp(ret, "xhprof_disable") != 0) {
         // logger func call:
-       save_func_call(ret, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
+       save_func_call(ret, file_of_call_func, zend_get_executed_lineno(TSRMLS_C));
 
         // extract arg of func
         p_args = data->function_state.arguments;
@@ -1778,7 +1790,7 @@ ZEND_DLEXPORT void hp_execute_ex (zend_execute_data *execute_data TSRMLS_DC) {
     return;
   }
 
-  fprintf(stderr, "%s \n", func); // + KirV
+  fprintf(stderr, "%s \n", "tick"); // + KirV
 
   BEGIN_PROFILING(&hp_globals.entries, func, hp_profile_flag);
 #if PHP_VERSION_ID < 50500
