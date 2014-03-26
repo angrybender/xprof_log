@@ -914,12 +914,17 @@ static const char *hp_get_base_filename(const char *filename) {
 /**
     KirV
 */
-static void save_log(char *str_buff) {
+static void save_log(char *str_buff, int indent) {
     php_stream *stream;
+    int         i;
     stream = php_stream_open_wrapper("/home/kirill/dump.txt", "a", REPORT_ERRORS, NULL);
 
     if (stream) {
 
+        // отступы для красоты
+        for (i = 0; i < indent; i++) {
+            php_stream_write(stream, "\t", 1);
+        }
         php_stream_write(stream, str_buff, strlen(str_buff));
         php_stream_write(stream, "\n", 1);
 
@@ -929,45 +934,65 @@ static void save_log(char *str_buff) {
 
 static void save_func_call(char *func_name, char *file_name, int line) {
     char    *buff;
-    char    *token_func_start = "FUNC_CALL";
 
-    buff = (char *)emalloc(strlen(func_name) + strlen(token_func_start) + strlen(file_name) + 20); // fixme magic const
-    sprintf (buff, "{%s}{%s}{%s}{%i}", token_func_start, func_name, file_name, line);
-    save_log(buff);
+    buff = (char *)emalloc(20); // fixme magic const
+    sprintf (buff, "%i", line);
+    save_log("<FUNC_CALL>", 0);
+        save_log("<NAME>", 1);
+            save_log(func_name, 2);
+        save_log("</NAME>", 1);
+        save_log("<FILE>", 1);
+            save_log(file_name, 2);
+        save_log("</FILE>", 1);
+        save_log("<LINE>", 1);
+            save_log(buff, 2);
+        save_log("</LINE>", 1);
+    save_log("</FUNC_CALL>", 0);
 }
 
-static void save_called_func_arg(zval *element TSRMLS_CC) {
+static void save_called_func_arg(zval *element) {
 
     char    *str_buff;
+    int     test = 1;
 
     if (Z_TYPE_P(element) == IS_RESOURCE) {
-        save_log("(RESOURCE)");
+        save_log("<RESOURCE />", 1);
 		return 0; // don't know how read resourse
 	}
 
-    zval *args[1];
-    zend_uint param_count = 1;
-    zval *retval_ptr;
+    zval *args[2];
+    zend_uint param_count = 2;
+    zval retval_ptr;
 
     args[0] = element;
 
     zval function_name;
+    zval export_flag;
     INIT_ZVAL(function_name);
-    ZVAL_STRING(&function_name, "serialize", 1);
+    INIT_ZVAL(export_flag);
+
+    ZVAL_STRING(&function_name, "var_export", 1);
+    ZVAL_BOOL(&export_flag, 1);
+    args[1] = &export_flag;
 
     if (call_user_function(
-            EG(function_table), NULL, &function_name,
-            retval_ptr, param_count, args TSRMLS_CC
+            CG(function_table), NULL, &function_name,
+            &retval_ptr, param_count, args TSRMLS_CC
         ) == SUCCESS
     ) {
-        str_buff = (char *)malloc(strlen(Z_STRVAL_P(retval_ptr)));
-        snprintf(str_buff, strlen(Z_STRVAL_P(retval_ptr)), "%s", Z_STRVAL_P(retval_ptr));
-
-        save_log(str_buff);
+        save_log("<ARGS>", 0);
+        fprintf(stderr, "%s \n", Z_STRVAL(retval_ptr)); // + KirV
+        save_log(Z_STRVAL(retval_ptr), 1);
+        save_log("</ARGS>", 0);
+    }
+    else {
+        save_log("<ARGS>", 0);
+        save_log("<ERROR_PARSE_PARAM />", 1);
+        save_log("</ARGS>", 0);
     }
 
     // don't forget to free the zvals
-    zval_ptr_dtor(&retval_ptr);
+    // zval_ptr_dtor(&retval_ptr);
     zval_dtor(&function_name);
 }
 
@@ -996,7 +1021,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
 
     data = EG(current_execute_data);
 
-    save_log("{__TICK__}"); // debug
+    //save_log("{__TICK__}"); // debug
 
   if (data) {
     /* shared meta data for function on the call stack */
@@ -1099,7 +1124,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
                     zval_copy_ctor(element);
                 }
 
-                save_called_func_arg(element TSRMLS_CC);
+                save_called_func_arg(element);
             }
         }
     }
@@ -1961,7 +1986,7 @@ static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
     BEGIN_PROFILING(&hp_globals.entries, ROOT_SYMBOL, hp_profile_flag);
 
     // entry point:
-    save_func_call("{ENTRY_POINT}", zend_get_executed_filename(TSRMLS_C), 0);
+    save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), 0);
   }
 }
 
