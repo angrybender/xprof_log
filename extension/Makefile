@@ -1,7 +1,7 @@
-srcdir = /home/kirill/apps/xprof/extension
-builddir = /home/kirill/apps/xprof/extension
-top_srcdir = /home/kirill/apps/xprof/extension
-top_builddir = /home/kirill/apps/xprof/extension
+srcdir = /home/kirill/apps/xprof_log/extension
+builddir = /home/kirill/apps/xprof_log/extension
+top_srcdir = /home/kirill/apps/xprof_log/extension
+top_builddir = /home/kirill/apps/xprof_log/extension
 EGREP = /bin/grep -E
 SED = /bin/sed
 CONFIGURE_COMMAND = './configure'
@@ -21,7 +21,7 @@ prefix = /usr
 exec_prefix = $(prefix)
 libdir = ${exec_prefix}/lib
 prefix = /usr
-phplibdir = /home/kirill/apps/xprof/extension/modules
+phplibdir = /home/kirill/apps/xprof_log/extension/modules
 phpincludedir = /usr/include/php
 CC = cc
 CFLAGS = -g -O2
@@ -161,8 +161,8 @@ distclean: clean
 
 .PHONY: all clean install distclean test
 .NOEXPORT:
-xhprof.lo: /home/kirill/apps/xprof/extension/xhprof.c
-	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/kirill/apps/xprof/extension $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/kirill/apps/xprof/extension/xhprof.c -o xhprof.lo 
+xhprof.lo: /home/kirill/apps/xprof_log/extension/xhprof.c
+	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/kirill/apps/xprof_log/extension $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/kirill/apps/xprof_log/extension/xhprof.c -o xhprof.lo 
 $(phplibdir)/xhprof.la: ./xhprof.la
 	$(LIBTOOL) --mode=install cp ./xhprof.la $(phplibdir)
 

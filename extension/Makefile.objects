@@ -1,5 +1,5 @@
-xhprof.lo: /home/kirill/apps/xprof/extension/xhprof.c
-	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/kirill/apps/xprof/extension $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/kirill/apps/xprof/extension/xhprof.c -o xhprof.lo 
+xhprof.lo: /home/kirill/apps/xprof_log/extension/xhprof.c
+	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/kirill/apps/xprof_log/extension $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/kirill/apps/xprof_log/extension/xhprof.c -o xhprof.lo 
 $(phplibdir)/xhprof.la: ./xhprof.la
 	$(LIBTOOL) --mode=install cp ./xhprof.la $(phplibdir)
 
