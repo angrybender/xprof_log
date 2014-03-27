@@ -914,6 +914,34 @@ static const char *hp_get_base_filename(const char *filename) {
 /**
     KirV
 */
+static char *addslashes(char *str_buff) {
+    zval *args[2];
+    zend_uint param_count = 1;
+    zval retval_ptr;
+
+    zval function_name;
+    zval text;
+    INIT_ZVAL(function_name);
+    INIT_ZVAL(text);
+
+    ZVAL_STRING(&function_name, "addslashes", 1);
+    ZVAL_STRING(&text, str_buff, 1);
+    args[0] = &text;
+
+    if (call_user_function(
+            CG(function_table), NULL, &function_name,
+            &retval_ptr, param_count, args TSRMLS_CC
+        ) == SUCCESS
+    ) {
+        zval_dtor(&function_name);
+        return Z_STRVAL(retval_ptr);
+    }
+    else {
+        zval_dtor(&function_name);
+        return "<ERROR_PARSE_PARAM type=\"addslashes\" />";
+    }
+}
+
 static void save_log(char *str_buff, int indent) {
     php_stream *stream;
     int         i;
@@ -952,13 +980,10 @@ static void save_func_call(char *func_name, char *file_name, int line) {
 
 static void save_called_func_arg(zval *element) {
 
-    char    *str_buff;
-    int     test = 1;
-
-    if (Z_TYPE_P(element) == IS_RESOURCE) {
+    /*if (Z_TYPE_P(element) == IS_RESOURCE) {
         save_log("<RESOURCE />", 1);
 		return 0; // don't know how read resourse
-	}
+	}*/
 
     zval *args[2];
     zend_uint param_count = 2;
@@ -981,13 +1006,12 @@ static void save_called_func_arg(zval *element) {
         ) == SUCCESS
     ) {
         save_log("<ARGS>", 0);
-        fprintf(stderr, "%s \n", Z_STRVAL(retval_ptr)); // + KirV
-        save_log(Z_STRVAL(retval_ptr), 1);
+            save_log(addslashes(Z_STRVAL(retval_ptr)), 1);
         save_log("</ARGS>", 0);
     }
     else {
         save_log("<ARGS>", 0);
-        save_log("<ERROR_PARSE_PARAM />", 1);
+            save_log("<ERROR_PARSE_PARAM type=\"var_export\" />", 1);
         save_log("</ARGS>", 0);
     }
 
