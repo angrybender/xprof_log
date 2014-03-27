@@ -942,6 +942,7 @@ static char *addslashes(char *str_buff) {
     }
 }
 
+
 static void save_log(char *str_buff, int indent) {
     php_stream *stream;
     int         i;
@@ -960,30 +961,7 @@ static void save_log(char *str_buff, int indent) {
     }
 }
 
-static void save_func_call(char *func_name, char *file_name, int line) {
-    char    *buff;
-
-    buff = (char *)emalloc(20); // fixme magic const
-    sprintf (buff, "%i", line);
-    save_log("<FUNC_CALL>", 0);
-        save_log("<NAME>", 1);
-            save_log(func_name, 2);
-        save_log("</NAME>", 1);
-        save_log("<FILE>", 1);
-            save_log(file_name, 2);
-        save_log("</FILE>", 1);
-        save_log("<LINE>", 1);
-            save_log(buff, 2);
-        save_log("</LINE>", 1);
-    save_log("</FUNC_CALL>", 0);
-}
-
-static void save_called_func_arg(zval *element) {
-
-    /*if (Z_TYPE_P(element) == IS_RESOURCE) {
-        save_log("<RESOURCE />", 1);
-		return 0; // don't know how read resourse
-	}*/
+static char *_var_export(zval *element) {
 
     zval *args[2];
     zend_uint param_count = 2;
@@ -1005,19 +983,87 @@ static void save_called_func_arg(zval *element) {
             &retval_ptr, param_count, args TSRMLS_CC
         ) == SUCCESS
     ) {
-        save_log("<ARGS>", 0);
-            save_log(addslashes(Z_STRVAL(retval_ptr)), 1);
-        save_log("</ARGS>", 0);
+
+        zval_dtor(&function_name);
+        return addslashes(Z_STRVAL(retval_ptr));
     }
     else {
-        save_log("<ARGS>", 0);
-            save_log("<ERROR_PARSE_PARAM type=\"var_export\" />", 1);
-        save_log("</ARGS>", 0);
+        zval_dtor(&function_name);
+        return "<ERROR_PARSE_PARAM type=\"var_export\" />";
+    }
+}
+
+static void _dump_superglobal(char *name) {
+    zend_auto_global    *auto_global;
+    char                *tag_name_open;
+    char                *tag_name_close;
+    int                 len;
+
+    len = strlen(name) + 4;
+    tag_name_open = (char*)emalloc(len);
+    snprintf(tag_name_open, len, "<%s>", name);
+
+    tag_name_close = (char*)emalloc(len);
+    snprintf(tag_name_close, len, "</%s>", name);
+
+    save_log(tag_name_open, 1);
+
+    // This code makes sure $_{name} has been initialized
+	/*if (!zend_hash_exists(&EG(symbol_table), name, strlen(name) + 1)) {
+        zend_auto_global* auto_global;
+        if (zend_hash_find(CG(auto_globals), name, strlen(name) + 1, (void **)&auto_global) != FAILURE) {
+            auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
+        }
+    }*/
+
+    // This fetches:
+    zval** arr;
+    char* script_name;
+    if (zend_hash_find(&EG(symbol_table), name, strlen(name) + 1, (void**)&arr) != FAILURE) {
+        save_log(_var_export(*arr), 2);
     }
 
-    // don't forget to free the zvals
-    // zval_ptr_dtor(&retval_ptr);
-    zval_dtor(&function_name);
+    save_log(tag_name_close, 1);
+
+    efree(tag_name_open);
+    efree(tag_name_close);
+}
+
+static void dump_superglobal() {
+    save_log("<SUPERGLOBALS>", 0);
+
+    _dump_superglobal("_SERVER");
+    _dump_superglobal("_SESSION");
+    _dump_superglobal("_GET");
+    _dump_superglobal("_POST");
+    _dump_superglobal("_REQUEST");
+    _dump_superglobal("_COOKIE");
+
+    save_log("</SUPERGLOBALS>", 0);
+}
+
+static void save_func_call(char *func_name, char *file_name, int line) {
+    char    *buff;
+
+    buff = (char *)emalloc(20); // fixme magic const
+    sprintf (buff, "%i", line);
+    save_log("<FUNC_CALL>", 0);
+        save_log("<NAME>", 1);
+            save_log(func_name, 2);
+        save_log("</NAME>", 1);
+        save_log("<FILE>", 1);
+            save_log(file_name, 2);
+        save_log("</FILE>", 1);
+        save_log("<LINE>", 1);
+            save_log(buff, 2);
+        save_log("</LINE>", 1);
+    save_log("</FUNC_CALL>", 0);
+}
+
+static void save_called_func_arg(zval *element) {
+    save_log("<ARGS>", 0);
+        save_log(_var_export(element), 1);
+    save_log("</ARGS>", 0);
 }
 
 /**
@@ -1057,6 +1103,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
         file_of_call_func = "";
     }
 
+    dump_superglobal();
     //save_log("{__TICK__}"); // debug
 
   if (data) {
@@ -1133,6 +1180,7 @@ static char *hp_get_function_name(zend_op_array *ops TSRMLS_DC) {
       if (add_filename) {
         is_need_parse = 0;
         save_func_call(func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
+        ret = "not null";
       } else {
         ret = estrdup(func);
       }
@@ -2021,6 +2069,8 @@ static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
     /* start profiling from fictitious main() */
     BEGIN_PROFILING(&hp_globals.entries, ROOT_SYMBOL, hp_profile_flag);
 
+    // superglobals:
+    dump_superglobal();
     // entry point:
     save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), 0);
   }
