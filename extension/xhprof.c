@@ -29,6 +29,7 @@
 #include "ext/standard/info.h"
 #include "php_xhprof.h"
 #include "zend_extensions.h"
+#include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <stdlib.h>
@@ -359,6 +360,7 @@ PHP_INI_BEGIN()
  * directory specified by this ini setting.
  */
 PHP_INI_ENTRY("xhprof.output_dir", "", PHP_INI_ALL, NULL)
+PHP_INI_ENTRY("xhprof.dump_dir", "/var/log/", PHP_INI_ALL, NULL)
 
 PHP_INI_END()
 
@@ -942,11 +944,18 @@ static char *addslashes(char *str_buff) {
     }
 }
 
-
+static char *_log_path;
+static char *_log_file_name;
 static void save_log(char *str_buff, int indent) {
     php_stream *stream;
-    int         i;
-    stream = php_stream_open_wrapper("/home/kirill/dump.txt", "a", REPORT_ERRORS, NULL);
+    int         i, len;
+    char        *file_path;
+
+    len = strlen(_log_path) + strlen(_log_file_name) + 1;
+    file_path = (char *)emalloc(len);
+    snprintf(file_path, len, "%s%s", _log_path, _log_file_name);
+
+    stream = php_stream_open_wrapper(file_path, "a+", REPORT_ERRORS, NULL);
 
     if (stream) {
 
@@ -959,6 +968,22 @@ static void save_log(char *str_buff, int indent) {
 
         php_stream_close(stream);
     }
+
+    efree(file_path);
+}
+
+static char *get_log_file_name()
+{
+    char        *result_str;
+
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    long microsec = ((unsigned long long)time.tv_sec * 1000000) + time.tv_usec;
+
+    result_str = (char *)emalloc(50);
+    snprintf(result_str, 50, "profile_%lu.txt", microsec);
+
+    return result_str;
 }
 
 static char *_var_export(zval *element) {
@@ -1008,7 +1033,7 @@ static void _dump_superglobal(char *name) {
 
     save_log(tag_name_open, 1);
 
-    // This code makes sure $_{name} has been initialized
+    // This code makes sure $_{name} has been initialized - sall segfault on SESSION when not sess_start
 	/*if (!zend_hash_exists(&EG(symbol_table), name, strlen(name) + 1)) {
         zend_auto_global* auto_global;
         if (zend_hash_find(CG(auto_globals), name, strlen(name) + 1, (void **)&auto_global) != FAILURE) {
@@ -2010,6 +2035,11 @@ ZEND_DLEXPORT zend_op_array* hp_compile_string(zval *source_string, char *filena
  * etc that needs to be instrumented with their corresponding proxies.
  */
 static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
+
+   _log_path = INI_STR("xhprof.dump_dir");
+   _log_file_name = get_log_file_name();
+
+
   if (!hp_globals.enabled) {
     int hp_profile_flag = 1;
 
