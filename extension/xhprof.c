@@ -1969,11 +1969,11 @@ static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
     hp_globals.xhprof_flags = (uint32)xhprof_flags;
 
     /* Replace zend_compile with our proxy */
-    //_zend_compile_file = zend_compile_file;
+    _zend_compile_file = zend_compile_file;
     //zend_compile_file  = hp_compile_file;
 
     /* Replace zend_compile_string with our proxy */
-    //_zend_compile_string = zend_compile_string;
+    _zend_compile_string = zend_compile_string;
     //zend_compile_string = hp_compile_string;
 
     /* Replace zend_execute with our proxy */
@@ -2063,8 +2063,8 @@ static void hp_stop(TSRMLS_D) {
   zend_execute_ex       = _zend_execute_ex;
 #endif
   zend_execute_internal = _zend_execute_internal;
-  zend_compile_file     = _zend_compile_file;
-  zend_compile_string   = _zend_compile_string;
+  //zend_compile_file     = _zend_compile_file;
+  //zend_compile_string   = _zend_compile_string;
 
   /* Resore cpu affinity. */
   restore_cpu_affinity(&hp_globals.prev_mask);
