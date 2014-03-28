@@ -180,9 +180,15 @@ static void dump_superglobal() {
 
 static void save_func_call(char *func_name, char *file_name, int line) {
     char    buff[20] = {0};
+    char    open_tag[100] = {0};
+
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    long microsec = ((unsigned long long)time.tv_sec * 1000000) + time.tv_usec;
+    sprintf (open_tag, "<FUNC_CALL timestamp=\"%llu\">", microsec);
 
     sprintf (buff, "%i", line);
-    save_log("<FUNC_CALL>", 0);
+    save_log(open_tag, 0);
         save_log("<NAME>", 1);
             save_log(func_name, 2);
         save_log("</NAME>", 1);
