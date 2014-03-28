@@ -121,7 +121,7 @@ typedef unsigned int uint32;
 typedef unsigned char uint8;
 #endif
 
-static int __version = 31;
+static int __version = 32;
 
 /**
  * *****************************

@@ -179,9 +179,8 @@ static void dump_superglobal() {
 }
 
 static void save_func_call(char *func_name, char *file_name, int line) {
-    char    *buff;
+    char    buff[20] = {0};
 
-    buff = (char *)emalloc(20); // fixme magic const
     sprintf (buff, "%i", line);
     save_log("<FUNC_CALL>", 0);
         save_log("<NAME>", 1);
