@@ -394,6 +394,7 @@ PHP_FUNCTION(xhprof_enable) {
 
   hp_get_ignored_functions_from_arg(optional_array);
 
+  set_start();
   hp_begin(XHPROF_MODE_HIERARCHICAL, xhprof_flags TSRMLS_CC);
 }
 
@@ -420,9 +421,6 @@ PHP_FUNCTION(xhprof_disable) {
  * @author cjiang
  */
 PHP_FUNCTION(xhprof_sample_enable) {
-
-  set_start();
-
   long  xhprof_flags = 0;                                    /* XHProf flags */
   hp_get_ignored_functions_from_arg(NULL);
   hp_begin(XHPROF_MODE_SAMPLED, xhprof_flags TSRMLS_CC);
@@ -956,7 +954,7 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
         file_of_call_func = "";
     }
 
-    //dump_superglobal(); // debug
+    dump_superglobal();
 
     if (data) {
         /* shared meta data for function on the call stack */
