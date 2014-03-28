@@ -103,7 +103,7 @@ static char *_var_export(zval *element) {
     INIT_ZVAL(function_name);
     INIT_ZVAL(export_flag);
 
-    ZVAL_STRING(&function_name, "var_export", 1);
+    ZVAL_STRING(&function_name, "print_r", 1);
     ZVAL_BOOL(&export_flag, 1);
     args[1] = &export_flag;
 

@@ -121,7 +121,7 @@ typedef unsigned int uint32;
 typedef unsigned char uint8;
 #endif
 
-static int __version = 33;
+static int __version = 34;
 
 /**
  * *****************************
@@ -916,6 +916,7 @@ static const char *hp_get_base_filename(const char *filename) {
   return filename;
 }
 
+char    _previous_file_name[2048] = {0};
 /**
  * Get the name of the current function. The name is qualified with
  * the class name if the function is in a class.
@@ -942,19 +943,11 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
 
     data = EG(current_execute_data);
 
-    // extract file of previos call poit
-    zend_execute_data *ptr_ed = data->prev_execute_data;
-    if (ptr_ed != NULL) {
-        zend_function *prev_func = ptr_ed->function_state.function;
-        file_of_call_func = prev_func->op_array.filename;
-        file_of_call_func = (char *)emalloc(strlen(prev_func->op_array.filename) + 1);
-        snprintf(file_of_call_func, strlen(prev_func->op_array.filename) + 1, "%s", prev_func->op_array.filename);
-    }
-    else {
-        file_of_call_func = "";
+    if (strlen(_previous_file_name) == 0) {
+        snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
     }
 
-    dump_superglobal();
+    //dump_superglobal();
 
     if (data) {
         /* shared meta data for function on the call stack */
@@ -990,15 +983,26 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
             //fprintf(stderr, "%s \n", func); // + KirV
 
             // if not call debug func:
-            if (strcmp(func, "xhprof_disable") != 0) {
-
+            if (strcmp(func, "xhprof_disable") != 0 && strcmp(func, "__call") != 0) {
                 if (func[strlen(func) - 1] == '}'  // определение {closure}
                     || strcmp(func, "_exception_handler") == 0) {
                     file_of_call_func = "";
                 }
-                else if (file_of_call_func[0] != '/') {
-                    // до сих пор иногда не определяется файл в котором происходит вызов
-                    file_of_call_func = "";
+                else {
+                    // extract file of previos call poit
+                    zend_execute_data *ptr_ed = data->prev_execute_data;
+
+                    if (ptr_ed != NULL) {
+                        zend_function *prev_func = ptr_ed->function_state.function;
+                        if (prev_func->op_array.filename != NULL) {
+                            file_of_call_func = prev_func->op_array.filename;
+                        }
+                        /*file_of_call_func = (char *)emalloc(strlen(prev_func->op_array.filename) + 1);
+                        snprintf(file_of_call_func, strlen(prev_func->op_array.filename) + 1, "%s", prev_func->op_array.filename);*/
+                    }
+                    else {
+                        file_of_call_func = "";
+                    }
                 }
 
                 // logger func call:
@@ -1071,9 +1075,11 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
         }
     }
 
-    if (file_of_call_func != NULL && file_of_call_func != "") {
+    /*if (file_of_call_func != NULL && file_of_call_func != "") {
        efree(file_of_call_func);
-    }
+    }*/
+
+    snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
 }
 
 /**
@@ -1791,6 +1797,8 @@ ZEND_DLEXPORT zend_op_array* hp_compile_string(zval *source_string, char *filena
 static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
 
     set_log_path(INI_STR("xhprof.dump_dir"));
+    snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
+    save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), 0);
 
   if (!hp_globals.enabled) {
     int hp_profile_flag = 1;
