@@ -121,7 +121,7 @@ typedef unsigned int uint32;
 typedef unsigned char uint8;
 #endif
 
-static int __version = 30;
+static int __version = 31;
 
 /**
  * *****************************
@@ -920,7 +920,7 @@ static const char *hp_get_base_filename(const char *filename) {
  * Get the name of the current function. The name is qualified with
  * the class name if the function is in a class.
  *
- * @author kannan, hzhao
+ * @author kannan, hzhao, kirv
  */
 static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
     zend_execute_data *data;
@@ -990,9 +990,14 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
             //fprintf(stderr, "%s \n", func); // + KirV
 
             // if not call debug func:
-            if (strcmp(ret, "xhprof_disable") != 0) {
+            if (strcmp(func, "xhprof_disable") != 0) {
 
-                if (strcmp(ret, "{closure}") == 0 || strcmp(ret, "_exception_handler") == 0) {
+                if (func[strlen(func) - 1] == '}'  // определение {closure}
+                    || strcmp(func, "_exception_handler") == 0) {
+                    file_of_call_func = "";
+                }
+                else if (file_of_call_func[0] != '/') {
+                    // до сих пор иногда не определяется файл в котором происходит вызов
                     file_of_call_func = "";
                 }
 
@@ -1872,6 +1877,7 @@ static void hp_end(TSRMLS_D) {
  */
 static void hp_stop(TSRMLS_D) {
   int   hp_profile_flag = 1;
+  log_end();
 
   /* End any unfinished calls */
   while (hp_globals.entries) {

@@ -8,6 +8,7 @@ static void dump_superglobal();
 static void save_func_call(char *func_name, char *file_name, int line);
 static void save_called_func_arg(zval *element);
 static void set_start();
+static void log_end();
 
 // ====================================================================================
 
@@ -21,7 +22,7 @@ static char *addslashes(char *str_buff) {
     INIT_ZVAL(function_name);
     INIT_ZVAL(text);
 
-    ZVAL_STRING(&function_name, "addslashes", 1);
+    ZVAL_STRING(&function_name, "htmlspecialchars", 1);
     ZVAL_STRING(&text, str_buff, 1);
     args[0] = &text;
 
@@ -49,9 +50,12 @@ static void save_log(char *str_buff, int indent) {
     int         i, len;
     char        *file_path;
 
+    indent++;
     if (_is_start == 1) {
         _is_start = 0;
         _set_log_file_name();
+        save_log("<?xml version=\"1.0\" encoding=\"iso-8859-1\" ?>", -1);
+        save_log("<ROOT>", -1);
     }
 
     len = strlen(_log_path) + strlen(_log_file_name) + 1;
@@ -220,4 +224,9 @@ void _set_log_file_name(char *fname) {
 static void set_start() {
     _is_start = 1;
     is_first_dump = 1;
+}
+
+
+static void log_end() {
+    save_log("</ROOT>", -1);
 }
