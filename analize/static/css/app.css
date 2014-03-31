@@ -1,0 +1,45 @@
+body {
+	overflow-x: hidden;
+}
+
+.component.function-list {
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	width: 50%;
+}
+.component.function-list .calle {
+	background: #ddd;
+	margin-bottom: 2px;
+	cursor: pointer;
+}
+.component.function-list .calle:hover {
+	background: #dde;
+}
+
+.component.file-source-viewer {
+	display: none;
+	position: absolute;
+	left: 25%;
+	width: 50%;
+	background: #fff;
+	padding: 10px;
+	box-shadow: 0 0 5px #ddd;
+}
+
+.component.file-source-viewer code {
+	color: #000;
+	background: none;
+	display: block;
+}
+.component.file-source-viewer .line-number {
+	display: inline-block;
+	margin-right: 5px;
+	padding-right: 5px;
+	border-right: 1px solid #ddd;
+	width: 30px;
+}
+.component.file-source-viewer .line.curr-line {
+	display: block;
+	background: #b1a4ff;
+}

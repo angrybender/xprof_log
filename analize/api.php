@@ -5,7 +5,8 @@
  */
 
 $routes = array(
-	'func_list' => array('func_list')
+	'func_list' => array('func_list'),
+	'get_php_file_view' => array('get_php_file_view')
 );
 
 $action = isset($_GET['method']) ? $_GET['method'] : '';
@@ -23,10 +24,10 @@ try {
 		$result = $controller->get($_GET);
 	}
 	elseif ($req_method === 'POST') {
-		$result = $controller->post($_GET);
+		$result = $controller->post($_POST);
 	}
 	elseif ($req_method === 'PUT') {
-		$result = $controller->put($_GET);
+		$result = $controller->put($_POST);
 	}
 	elseif ($req_method === 'DELETE') {
 		$result = $controller->delete($_GET);
