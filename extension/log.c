@@ -9,6 +9,7 @@ static void save_func_call(char *func_name, char *file_name, int line);
 static void save_called_func_arg(zval *element);
 static void set_start();
 static void log_end();
+char *int_to_str(int number);
 
 // ====================================================================================
 
@@ -139,14 +140,6 @@ static void _dump_superglobal(char *name) {
 
     save_log(tag_name_open, 1);
 
-    // This code makes sure $_{name} has been initialized - sall segfault on SESSION when not sess_start
-	/*if (!zend_hash_exists(&EG(symbol_table), name, strlen(name) + 1)) {
-        zend_auto_global* auto_global;
-        if (zend_hash_find(CG(auto_globals), name, strlen(name) + 1, (void **)&auto_global) != FAILURE) {
-            auto_global->armed = auto_global->auto_global_callback(auto_global->name, auto_global->name_len TSRMLS_CC);
-        }
-    }*/
-
     // This fetches:
     zval** arr;
     if (zend_hash_find(&EG(symbol_table), name, strlen(name) + 1, (void**)&arr) != FAILURE) {
@@ -234,4 +227,12 @@ static void set_start() {
 
 static void log_end() {
     save_log("</ROOT>", -1);
+}
+
+
+char *int_to_str(int number) {
+    char *buff;
+    buff = (char *)emalloc(20);
+    snprintf(buff, 20, "%i", number);
+    return buff;
 }

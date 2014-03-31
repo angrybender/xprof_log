@@ -916,7 +916,6 @@ static const char *hp_get_base_filename(const char *filename) {
   return filename;
 }
 
-char    _previous_file_name[2048] = {0};
 /**
  * Get the name of the current function. The name is qualified with
  * the class name if the function is in a class.
@@ -943,11 +942,7 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
 
     data = EG(current_execute_data);
 
-    if (strlen(_previous_file_name) == 0) {
-        snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
-    }
-
-    //dump_superglobal();
+    dump_superglobal();
 
     if (data) {
         /* shared meta data for function on the call stack */
@@ -989,24 +984,30 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
                     file_of_call_func = "";
                 }
                 else {
-                    // extract file of previos call poit
+                    // extract file of previos call point
                     zend_execute_data *ptr_ed = data->prev_execute_data;
 
-                    if (ptr_ed != NULL) {
+                    if (ptr_ed && ptr_ed->function_state.arguments) {
                         zend_function *prev_func = ptr_ed->function_state.function;
                         if (prev_func->op_array.filename != NULL) {
                             file_of_call_func = prev_func->op_array.filename;
                         }
-                        /*file_of_call_func = (char *)emalloc(strlen(prev_func->op_array.filename) + 1);
-                        snprintf(file_of_call_func, strlen(prev_func->op_array.filename) + 1, "%s", prev_func->op_array.filename);*/
+                        else {
+                            file_of_call_func = "";
+                        }
                     }
                     else {
                         file_of_call_func = "";
                     }
                 }
 
-                // logger func call:
-                save_func_call(ret, file_of_call_func, zend_get_executed_lineno(TSRMLS_C));
+                if (file_of_call_func && file_of_call_func[0] != '/') {
+                    // logger func call:
+                    save_func_call(ret, "", zend_get_executed_lineno(TSRMLS_C));
+                }
+                else {
+                    save_func_call(ret, file_of_call_func, zend_get_executed_lineno(TSRMLS_C));
+                }
 
                 // extract arg of func
                 p_args = data->function_state.arguments;
@@ -1074,12 +1075,6 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
             efree(ret);
         }
     }
-
-    /*if (file_of_call_func != NULL && file_of_call_func != "") {
-       efree(file_of_call_func);
-    }*/
-
-    snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
 }
 
 /**
@@ -1718,6 +1713,7 @@ ZEND_DLEXPORT void hp_execute_ex (zend_execute_data *execute_data TSRMLS_DC) {
   int hp_profile_flag = 1;
 
   hp_log_function_call(ops TSRMLS_CC);
+  //db_filename(ops TSRMLS_CC);
 
 #if PHP_VERSION_ID < 50500
   _zend_execute(ops TSRMLS_CC);
@@ -1797,7 +1793,6 @@ ZEND_DLEXPORT zend_op_array* hp_compile_string(zval *source_string, char *filena
 static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
 
     set_log_path(INI_STR("xhprof.dump_dir"));
-    snprintf(_previous_file_name, strlen(zend_get_executed_filename(TSRMLS_C)) + 1, "%s", zend_get_executed_filename(TSRMLS_C));
     save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), 0);
 
   if (!hp_globals.enabled) {
