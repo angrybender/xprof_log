@@ -20,3 +20,4 @@ build/
 config.status
 Makefile
 Makefile.objects
+nginx.err
