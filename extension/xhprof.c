@@ -1067,7 +1067,7 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
            */
           if (add_filename) {
             is_need_parse = 0;
-            save_func_call(func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
+            //save_func_call(func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
           }
         }
 
