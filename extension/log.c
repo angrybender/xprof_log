@@ -44,10 +44,11 @@ static char *addslashes(char *str_buff) {
 char *_log_path;
 char _log_file_name[150] = {0};
 static int _is_start = 1;
+FILE        *g_log_file;
 
 static void save_log(char *str_buff, int indent) {
     //php_stream *stream;
-    FILE        *file;
+
     int         i, len;
     char        *file_path;
 
@@ -63,15 +64,17 @@ static void save_log(char *str_buff, int indent) {
     file_path = (char *)emalloc(len);
     snprintf(file_path, len, "%s%s", _log_path, _log_file_name);
 
-    file = fopen(file_path, "a+");
+    if (g_log_file == NULL) {
+        g_log_file = fopen(file_path, "a+");
+    }
 
     // отступы для красоты
     for (i = 0; i < indent; i++) {
-        fwrite("\t", 1, 1, file);
+        fwrite("\t", 1, 1, g_log_file);
     }
 
-    fwrite(str_buff, 1, strlen(str_buff), file);
-    fwrite("\n", 1, 1, file);
+    fwrite(str_buff, 1, strlen(str_buff), g_log_file);
+    fwrite("\n", 1, 1, g_log_file);
 
     /*stream = php_stream_open_wrapper(file_path, "a+", REPORT_ERRORS, NULL);
 
@@ -88,7 +91,6 @@ static void save_log(char *str_buff, int indent) {
     }*/
 
     efree(file_path);
-    fclose(file);
 }
 
 static char *_var_export(zval *element) {
@@ -227,6 +229,7 @@ static void set_start() {
 
 static void log_end() {
     save_log("</ROOT>", -1);
+    fclose(g_log_file);
 }
 
 
