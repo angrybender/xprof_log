@@ -56,7 +56,7 @@ static void save_log(char *str_buff, int indent) {
     if (_is_start == 1) {
         _is_start = 0;
         _set_log_file_name();
-        save_log("<?xml version=\"1.0\" encoding=\"iso-8859-1\" ?>", -1);
+        save_log("<?xml version=\"1.0\" encoding=\"utf-8\" ?>", -1);
         save_log("<ROOT>", -1);
     }
 
