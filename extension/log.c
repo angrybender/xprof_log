@@ -5,7 +5,7 @@ static char *addslashes(char *str_buff);
 static void save_log(char *str_buff, int indent);
 static void set_log_path(char *path);
 static void dump_superglobal();
-static void save_func_call(char *func_name, char *file_name, int line);
+static void save_func_call(char *func_name, char *file_name, char *dest_file_name, int line, zend_execute_data *data);
 static void save_called_func_arg(zval *element);
 static void set_start();
 static void log_end();
@@ -75,20 +75,6 @@ static void save_log(char *str_buff, int indent) {
 
     fwrite(str_buff, 1, strlen(str_buff), g_log_file);
     fwrite("\n", 1, 1, g_log_file);
-
-    /*stream = php_stream_open_wrapper(file_path, "a+", REPORT_ERRORS, NULL);
-
-    if (stream) {
-
-        // отступы для красоты
-        for (i = 0; i < indent; i++) {
-            php_stream_write(stream, "\t", 1);
-        }
-        php_stream_write(stream, str_buff, strlen(str_buff));
-        php_stream_write(stream, "\n", 1);
-
-        php_stream_close(stream);
-    }*/
 
     efree(file_path);
 }
@@ -173,9 +159,13 @@ static void dump_superglobal() {
     save_log("</SUPERGLOBALS>", 0);
 }
 
-static void save_func_call(char *func_name, char *file_name, int line) {
+static void save_func_call(char *func_name, char *file_name, char *dest_file_name, int line, zend_execute_data *data) {
     char    buff[20] = {0};
     char    open_tag[100] = {0};
+
+    void **p_args;
+    int arg_count;
+	int i_args;
 
     struct timeval time;
     gettimeofday(&time, NULL);
@@ -190,16 +180,34 @@ static void save_func_call(char *func_name, char *file_name, int line) {
         save_log("<FILE>", 1);
             save_log(file_name, 2);
         save_log("</FILE>", 1);
+         save_log("<FILE_S>", 1);
+            save_log(dest_file_name, 2);
+        save_log("</FILE_S>", 1);
         save_log("<LINE>", 1);
             save_log(buff, 2);
         save_log("</LINE>", 1);
+
+    // extract arg of func
+    if (data) {
+        p_args = data->function_state.arguments;
+        arg_count = (int)(zend_uintptr_t) *p_args;
+        if (arg_count > 0) {
+            for (i_args=0; i_args<arg_count; i_args++) {
+                zval *arg;
+
+                arg = *((zval **) (p_args-(arg_count-i_args)));
+                save_called_func_arg(arg);
+            }
+        }
+    }
+
     save_log("</FUNC_CALL>", 0);
 }
 
 static void save_called_func_arg(zval *element) {
-    save_log("<ARGS>", 0);
-        save_log(_var_export(element), 1);
-    save_log("</ARGS>", 0);
+    save_log("<ARGS>", 1);
+        save_log(_var_export(element), 2);
+    save_log("</ARGS>", 1);
 }
 
 static void set_log_path(char *path) {

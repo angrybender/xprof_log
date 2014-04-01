@@ -121,7 +121,7 @@ typedef unsigned int uint32;
 typedef unsigned char uint8;
 #endif
 
-static int __version = 35;
+static int __version = 36;
 
 /**
  * *****************************
@@ -916,6 +916,69 @@ static const char *hp_get_base_filename(const char *filename) {
   return filename;
 }
 
+static char *hp_fetch_debug_backtrace(TSRMLS_DC)
+{
+	zend_execute_data *ptr, *skip;
+	int lineno, frameno = 0;
+	const char *function_name;
+	const char *filename;
+	const char *class_name;
+	const char *include_filename = NULL;
+	zval *stack_frame;
+
+	ptr = EG(current_execute_data);
+
+	/* skip "new Exception()" */
+	if (ptr && ptr->opline && (ptr->opline->opcode == ZEND_NEW)) {
+		ptr = ptr->prev_execute_data;
+	}
+
+	/* skip current */
+	if (ptr) {
+		//ptr = ptr->prev_execute_data;
+	}
+
+	while (ptr) {
+
+		skip = ptr;
+		/* skip internal handler */
+		if (!skip->op_array &&
+		    skip->prev_execute_data &&
+		    skip->prev_execute_data->opline &&
+		    skip->prev_execute_data->opline->opcode != ZEND_DO_FCALL &&
+		    skip->prev_execute_data->opline->opcode != ZEND_DO_FCALL_BY_NAME &&
+		    skip->prev_execute_data->opline->opcode != ZEND_INCLUDE_OR_EVAL) {
+			skip = skip->prev_execute_data;
+		}
+
+		if (skip->op_array) {
+			filename = skip->op_array->filename;
+			break;
+		} else {
+			zend_execute_data *prev = skip->prev_execute_data;
+
+			while (prev) {
+				if (prev->function_state.function &&
+					prev->function_state.function->common.type != ZEND_USER_FUNCTION &&
+					!(prev->function_state.function->common.type == ZEND_INTERNAL_FUNCTION &&
+						(prev->function_state.function->common.fn_flags & ZEND_ACC_CALL_VIA_HANDLER))) {
+					break;
+				}
+				if (prev->op_array) {
+					filename = (char*)prev->op_array->filename;
+					break;
+				}
+				prev = prev->prev_execute_data;
+			}
+			filename = NULL;
+		}
+
+		ptr = skip->prev_execute_data;
+	}
+
+	return filename;
+}
+
 /**
  * Get the name of the current function. The name is qualified with
  * the class name if the function is in a class.
@@ -935,10 +998,6 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
     char              *file_of_call_func = NULL; // файл, из которого совершили вызов, для точки входа пусто
 
     zend_function      *curr_func;
-
-    void **p_args;
-    int arg_count;
-	int i_args;
 
     data = EG(current_execute_data);
 
@@ -979,48 +1038,13 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
 
             // if not call debug func:
             if (strcmp(func, "xhprof_disable") != 0 && strcmp(func, "__call") != 0) {
-                if (func[strlen(func) - 1] == '}'  // определение {closure}
-                    || strcmp(func, "_exception_handler") == 0) {
-                    file_of_call_func = "";
-                }
-                else {
-                    // extract file of previos call point
-                    zend_execute_data *ptr_ed = data->prev_execute_data;
 
-                    if (ptr_ed && ptr_ed->function_state.arguments) {
-                        zend_function *prev_func = ptr_ed->function_state.function;
-                        if (prev_func->op_array.filename != NULL) {
-                            file_of_call_func = prev_func->op_array.filename;
-                        }
-                        else {
-                            file_of_call_func = "";
-                        }
-                    }
-                    else {
-                        file_of_call_func = "";
-                    }
-                }
+                file_of_call_func = hp_fetch_debug_backtrace(TSRMLS_CC);
 
-                if (file_of_call_func && file_of_call_func[0] != '/') {
+                if (file_of_call_func) {
                     // logger func call:
-                    save_func_call(ret, "", zend_get_executed_lineno(TSRMLS_C));
+                    save_func_call(ret, file_of_call_func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C), data);
                 }
-                else {
-                    save_func_call(ret, file_of_call_func, zend_get_executed_lineno(TSRMLS_C));
-                }
-
-                // extract arg of func
-                p_args = data->function_state.arguments;
-                arg_count = (int)(zend_uintptr_t) *p_args;
-                if (arg_count > 0) {
-                    for (i_args=0; i_args<arg_count; i_args++) {
-                        zval *arg;
-
-                        arg = *((zval **) (p_args-(arg_count-i_args)));
-                        save_called_func_arg(arg);
-                    }
-                }
-
             }
         }
         else {
@@ -1067,7 +1091,6 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
            */
           if (add_filename) {
             is_need_parse = 0;
-            //save_func_call(func, zend_get_executed_filename(TSRMLS_C), zend_get_executed_lineno(TSRMLS_C));
           }
         }
 
@@ -1076,6 +1099,7 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
         }
     }
 }
+
 
 /**
  * Free any items in the free list.
@@ -1793,7 +1817,7 @@ ZEND_DLEXPORT zend_op_array* hp_compile_string(zval *source_string, char *filena
 static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
 
     set_log_path(INI_STR("xhprof.dump_dir"));
-    save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), 0);
+    save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), zend_get_executed_filename(TSRMLS_C), 0, NULL);
 
   if (!hp_globals.enabled) {
     int hp_profile_flag = 1;
