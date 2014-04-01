@@ -17,6 +17,7 @@ static char *addslashes(char *str_buff) {
     zval *args[2];
     zend_uint param_count = 1;
     zval retval_ptr;
+    char *return_buff;
 
     zval function_name;
     zval text;
@@ -32,8 +33,9 @@ static char *addslashes(char *str_buff) {
             &retval_ptr, param_count, args TSRMLS_CC
         ) == SUCCESS
     ) {
+        return_buff = Z_STRVAL(retval_ptr);
         zval_dtor(&function_name);
-        return Z_STRVAL(retval_ptr);
+        return return_buff;
     }
     else {
         zval_dtor(&function_name);
@@ -81,6 +83,8 @@ static void save_log(char *str_buff, int indent) {
 
 static char *_var_export(zval *element) {
 
+    char *result_buff;
+
     zval *args[2];
     zend_uint param_count = 2;
     zval retval_ptr;
@@ -101,9 +105,10 @@ static char *_var_export(zval *element) {
             &retval_ptr, param_count, args TSRMLS_CC
         ) == SUCCESS
     ) {
-
+        result_buff = addslashes(Z_STRVAL(retval_ptr));
         zval_dtor(&function_name);
-        return addslashes(Z_STRVAL(retval_ptr));
+        zval_dtor(&retval_ptr);
+        return result_buff;
     }
     else {
         zval_dtor(&function_name);
