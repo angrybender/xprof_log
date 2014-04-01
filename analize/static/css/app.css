@@ -12,6 +12,11 @@ body {
 	background: #ddd;
 	margin-bottom: 2px;
 	cursor: pointer;
+	position: absolute;
+	left: 0;
+	width: 80%;
+	height: 35px;
+	line-height: 35px;
 }
 .component.function-list .calle:hover {
 	background: #dde;

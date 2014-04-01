@@ -14,34 +14,31 @@ function get_list_of_files(list) {
 
 $(function() {
 
-	var min_height = 15;
+	var top_delta = 35;
 	$.getJSON('/api.php?method=func_list', function(list) {
 		var html = "";
 		var times = [];
-		var last_time = 0;
-
-		var min_time = 999999999999;
-		for (var i in list) {
-			if (i > 0 && list[i].time - last_time < min_time) {
-				min_time = list[i].time - last_time;
-			}
-
-			if (i > 0) {
-				list[i-1].ex_time = list[i].time - last_time;
-			}
-
-			last_time = list[i].time;
-		}
+		var last_top = -1;
+		var left = 0;
+		var top = 0;
 
 		for (i in list) {
-			if (!list[i].ex_time) {
-				list[i].ex_time = min_time;
+
+			top = list[i].time;
+			if (last_top > 0 && top - last_top <= top_delta) {
+				left = 50 - left;
+			}
+			else {
+				left = 0;
 			}
 
-			html = html + "<div data-file='{file}' data-line='{line}' class='calle' style='line-height: {height}px; height: {height}px'>{name} / {file}</div>"
+			last_top = top;
+
+			html = html + "<div data-file='{file}' data-line='{line}' class='calle' style='top: {top}px; left: {left}%'>{file} : {name}</div>"
 				.replace(/{time}/g, 		list[i].time)
 				.replace(/{name}/g, 		list[i].name)
-				.replace(/{height}/g, 		min_height + list[i].ex_time/min_time)
+				.replace(/{top}/g, 			top)
+				.replace(/{left}/g, 		left)
 				.replace(/{line}/g, 		list[i].line)
 				.replace(/{file}/g, 		list[i].file);
 		}
