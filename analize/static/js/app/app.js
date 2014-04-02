@@ -62,7 +62,7 @@ function render_catalog_bars() {
 	var height_box = 0;
 	var html = "";
 
-	var scale = ModelFunctions[ModelFunctions.length-1].time/3000;
+	var scale = ModelFunctions[ModelFunctions.length-1].time/ModelView.scale;
 	var scroll_pos = getBodyScrollTop();
 	var w_height = $(window).height();
 
@@ -82,12 +82,17 @@ function render_catalog_bars() {
 			prev_section = ModelFunctions[i].catalog;
 		}
 	}
-	$('.component.time-line-bar').height(3000).html(html);
-
+	$('.component.time-line-bar').height(ModelView.scale).html(html);
 }
+
+
 
 var ModelFunctions = [];
 var ModelCatalogs = {};
+var ModelView = {
+	scale : 3000,
+	type  : 'catalog'
+};
 
 $(function() {
 
@@ -142,7 +147,26 @@ $(function() {
 				timer = setTimeout(show_title, 500);
 			})
 			.bind('mouseleave', function(){
-				$(this).find('span').remove();
+				clearTimeout(timer);
+				$(obj).find('span').remove();
 			});
+	})();
+
+	(function(){
+
+		$('.component.scale-toolbar .plus').click(function(){
+			if (!ModelFunctions) return;
+
+			ModelView.scale = ModelView.scale*1.5;
+			render_catalog_bars();
+		});
+
+		$('.component.scale-toolbar .minus').click(function(){
+			if (!ModelFunctions) return;
+
+			ModelView.scale = ModelView.scale/1.5;
+			if (ModelView.scale<3000) ModelView.scale = 3000;
+			render_catalog_bars();
+		});
 	})();
 });

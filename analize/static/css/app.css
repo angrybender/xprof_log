@@ -69,3 +69,9 @@ body {
 	top: 0px;
 	background: #fff;
 }
+
+.component.scale-toolbar {
+	position: fixed;
+	left: 10px;
+	top: 10px;
+}
