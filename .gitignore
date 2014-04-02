@@ -21,3 +21,4 @@ config.status
 Makefile
 Makefile.objects
 nginx.err
+*.mwb.bak
