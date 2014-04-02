@@ -65,8 +65,16 @@ function render_catalog_bars() {
 	var scale = ModelFunctions[ModelFunctions.length-1].time/ModelView.scale;
 	var scroll_pos = getBodyScrollTop();
 	var w_height = $(window).height();
+	var ModelCatalogs = {};
 
+	var catalog_index_max = 0;
 	for (var i in ModelFunctions) {
+
+		if (!ModelCatalogs[ModelFunctions[i].catalog]) {
+			ModelCatalogs[ModelFunctions[i].catalog] = catalog_index_max;
+			catalog_index_max++;
+		}
+
 		if ((i && prev_section !== ModelFunctions[i].catalog) || (i == ModelFunctions.length-1)) { // если поменялся уровень или дошли до конца
 			height_box = ModelFunctions[i].time/scale - start_box;
 
@@ -85,10 +93,45 @@ function render_catalog_bars() {
 	$('.component.time-line-bar').height(ModelView.scale).html(html);
 }
 
+function render_files_bars() {
 
+	var prev_section = null;
+	var start_box = 0;
+	var height_box = 0;
+	var html = "";
+
+	var scale = ModelFunctions[ModelFunctions.length-1].time/ModelView.scale;
+	var scroll_pos = getBodyScrollTop();
+	var w_height = $(window).height();
+	var ModelFiles = {};
+
+	var file_index_max = 0;
+	for (var i in ModelFunctions) {
+
+		if (!ModelFiles[ModelFunctions[i].file]) {
+			ModelFiles[ModelFunctions[i].file] = file_index_max;
+			file_index_max++;
+		}
+
+		if ((i && prev_section !== ModelFunctions[i].file) || (i == ModelFunctions.length-1)) { // если поменялся уровень или дошли до конца
+			height_box = ModelFunctions[i].time/scale - start_box;
+
+			if (start_box + height_box > scroll_pos && start_box-scroll_pos<w_height) {
+				html = html + "<div class='bar-section' style='top:{top}px; height: {height}px; background: {bag_color}' data-id='{m_id}'></div>"
+					.replace(/{top}/g, start_box)
+					.replace(/{height}/g, height_box)
+					.replace(/{m_id}/g, i)
+					.replace(/{bag_color}/g, get_color_by_index(ModelFiles[prev_section]))
+			}
+
+			start_box = ModelFunctions[i].time/scale;
+			prev_section = ModelFunctions[i].file;
+		}
+	}
+	$('.component.time-line-bar').height(ModelView.scale).html(html);
+}
 
 var ModelFunctions = [];
-var ModelCatalogs = {};
 var ModelView = {
 	scale : 3000,
 	type  : 'catalog'
@@ -109,14 +152,9 @@ $(function() {
 	$.getJSON('/api.php?method=func_list', function(list) {
 		var i;
 
-		var catalog_index_max = 0;
 		for (i in list) {
 			if (list[i].file) {
 				list[i].catalog = get_path_of_file_full_path(list[i].file);
-				if (!ModelCatalogs[list[i].catalog]) {
-					ModelCatalogs[list[i].catalog] = catalog_index_max;
-					catalog_index_max++;
-				}
 			}
 			else {
 				list[i].catalog = null;
@@ -133,8 +171,11 @@ $(function() {
 		var show_title = function() {
 			var $this = $(obj);
 			var m_id = $this.data('id')*1;
-			if (ModelFunctions[m_id]) {
-				$this.html("<span>{catalog}</span>".replace(/{catalog}/g, ModelFunctions[m_id].catalog))
+			if (ModelFunctions[m_id] && ModelView.type == 'catalog') {
+				$this.html("<span>{catalog}</span>".replace(/{catalog}/g, ModelFunctions[m_id].catalog));
+			}
+			else if (ModelFunctions[m_id] && ModelView.type == 'file') {
+				$this.html("<span>{file}</span>".replace(/{file}/g, ModelFunctions[m_id].file));
 			}
 		}
 
@@ -158,7 +199,16 @@ $(function() {
 			if (!ModelFunctions) return;
 
 			ModelView.scale = ModelView.scale*1.5;
-			render_catalog_bars();
+			if (ModelView.scale > 10000) {
+				ModelView.type = 'file';
+			}
+
+			if (ModelView.type == 'catalog') {
+				render_catalog_bars();
+			}
+			else if (ModelView.type == 'file') {
+				render_files_bars();
+			}
 		});
 
 		$('.component.scale-toolbar .minus').click(function(){
@@ -166,7 +216,16 @@ $(function() {
 
 			ModelView.scale = ModelView.scale/1.5;
 			if (ModelView.scale<3000) ModelView.scale = 3000;
-			render_catalog_bars();
+			if (ModelView.scale < 10000) {
+				ModelView.type = 'catalog';
+			}
+
+			if (ModelView.type == 'catalog') {
+				render_catalog_bars();
+			}
+			else if (ModelView.type == 'file') {
+				render_files_bars();
+			}
 		});
 	})();
 });
