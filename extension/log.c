@@ -74,8 +74,7 @@ static void save_log(char *str_buff, int indent) {
         fprintf(g_log_file, "%s", "\t");
     }
 
-    fprintf(g_log_file, "%s", str_buff);
-    fprintf(g_log_file, "%s", "\n");
+    fprintf(g_log_file, "%s%s", str_buff, "\n");
 }
 
 static char *_var_export(zval *element) {
