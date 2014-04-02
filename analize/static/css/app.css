@@ -60,3 +60,12 @@ body {
 	width: 100%;
 	left: 0;
 }
+.component.time-line-bar .bar-section span {
+	position: absolute;
+	width: 400px;
+	padding: 20px;
+	border: 1px solid #000;
+	left: -410px;
+	top: 0px;
+	background: #fff;
+}

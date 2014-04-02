@@ -55,83 +55,94 @@ function get_path_of_file_full_path(file_full_path) {
 	return file_full_path.split(DS).slice(0, -1).join(DS) + DS;
 }
 
+function render_catalog_bars() {
+
+	var prev_section = null;
+	var start_box = 0;
+	var height_box = 0;
+	var html = "";
+
+	var scale = ModelFunctions[ModelFunctions.length-1].time/3000;
+	var scroll_pos = getBodyScrollTop();
+	var w_height = $(window).height();
+
+	for (var i in ModelFunctions) {
+		if ((i && prev_section !== ModelFunctions[i].catalog) || (i == ModelFunctions.length-1)) { // если поменялся уровень или дошли до конца
+			height_box = ModelFunctions[i].time/scale - start_box;
+
+			if (start_box + height_box > scroll_pos && start_box-scroll_pos<w_height) {
+				html = html + "<div class='bar-section' style='top:{top}px; height: {height}px; background: {bag_color}' data-id='{m_id}'></div>"
+					.replace(/{top}/g, start_box)
+					.replace(/{height}/g, height_box)
+					.replace(/{m_id}/g, i)
+					.replace(/{bag_color}/g, get_color_by_index(ModelCatalogs[prev_section]))
+			}
+
+			start_box = ModelFunctions[i].time/scale;
+			prev_section = ModelFunctions[i].catalog;
+		}
+	}
+	$('.component.time-line-bar').height(3000).html(html);
+
+}
+
+var ModelFunctions = [];
+var ModelCatalogs = {};
+
 $(function() {
 
-	var top_delta = 35;
+	(function(){
+		var timer=0;
+		$(window).scroll(function() {
+			if (!ModelFunctions) return;
+
+			clearTimeout(timer);
+			timer = setTimeout(render_catalog_bars, 250);
+		});
+	})();
+
 	$.getJSON('/api.php?method=func_list', function(list) {
-		var html = "";
-		var times = [];
-		var last_top = -1;
-		var left = 0;
-		var top = 0;
 		var i;
 
-		var catalog_index = {};
 		var catalog_index_max = 0;
-		var prev_section = null;
-		var start_box = 0;
-		var height_box = 0;
-		html = "";
 		for (i in list) {
 			if (list[i].file) {
 				list[i].catalog = get_path_of_file_full_path(list[i].file);
-				if (!catalog_index[list[i].catalog]) {
-					catalog_index[list[i].catalog] = catalog_index_max;
+				if (!ModelCatalogs[list[i].catalog]) {
+					ModelCatalogs[list[i].catalog] = catalog_index_max;
 					catalog_index_max++;
 				}
 			}
 			else {
 				list[i].catalog = null;
 			}
+		}
 
-			var scale = list[list.length-1].time/3000;
-			if ((i && prev_section !== list[i].catalog) || (i == list.length-1)) { // если поменялся уровень или дошли до конца
-				height_box = list[i].time/scale - start_box;
+		ModelFunctions= list;
+		render_catalog_bars();
+	});
 
-				if (height_box>=1) {
-					html = html + "<div class='bar-section' style='top:{top}px; height: {height}px; background: {bag_color}' data-path='{path}'></div>"
-						.replace(/{top}/g, start_box)
-						.replace(/{height}/g, height_box)
-						.replace(/{path}/g, prev_section)
-						.replace(/{bag_color}/g, get_color_by_index(catalog_index[prev_section]))
-				}
+	(function(){
 
-				start_box = list[i].time/scale;
-				prev_section = list[i].catalog;
+		var obj;
+		var show_title = function() {
+			var $this = $(obj);
+			var m_id = $this.data('id')*1;
+			if (ModelFunctions[m_id]) {
+				$this.html("<span>{catalog}</span>".replace(/{catalog}/g, ModelFunctions[m_id].catalog))
 			}
 		}
-		$('.component.time-line-bar').html(html);
 
-		//console.log("ALL count: ", list.length, " GROUP count: ", gcnt);
-	});
-
-	$('.component.function-list').on('click', '.calle', function() {
-		$.getJSON(
-			'/api.php',
-			{method : 'get_php_file_view', full_path : $(this).data('file'), line: $(this).data('line')},
-			function(html) {
-				$('.component.file-source-viewer').trigger('show', [html.file]);
-			}
-		);
-	});
-	$('.component.file-source-viewer')
-		.click(function() {
-			$(this).trigger('hide');
-		})
-		.bind('hide', function() {
-			$(this).hide();
-			$('.component.function-list').css('left', 10);
-		})
-		.bind('show', function(e, html) {
-			$(this).html(html);
-			$(this).css({
-				display : 'block',
-				top 	: getBodyScrollTop() + 10
+		var timer=0;
+		$('.component.time-line-bar')
+			.on('mouseenter', '.bar-section', function() {
+				$(obj).find('span').remove();
+				obj = this;
+				clearTimeout(timer);
+				timer = setTimeout(show_title, 500);
+			})
+			.bind('mouseleave', function(){
+				$(this).find('span').remove();
 			});
-
-			var curr_pos = $(this).find('.line.curr-line').offset().top - $(this).offset().top;
-			window.scrollTo(0, getBodyScrollTop() + curr_pos);
-
-			//$('.component.function-list').css('left', '-25%');
-		});
+	})();
 });
