@@ -112,13 +112,49 @@ static char *_var_export(zval *element) {
     }
 }
 
+// дампим суперглобалы только если есть изменения
 static int is_first_dump = 1;
+static char *__cache_super_global[10];
+int is_super_global_change(char *super_global, char *value) {
+
+    int array_index = -1;
+    if (strcmp(super_global, "_GET") == 0) {
+        array_index = 0;
+    }
+
+    if (strcmp(super_global, "_POST") == 0) {
+        array_index = 1;
+    }
+
+    if (strcmp(super_global, "_COOKIE") == 0) {
+        array_index = 2;
+    }
+
+    if (strcmp(super_global, "_SESSION") == 0) {
+        array_index = 3;
+    }
+
+    if (array_index < 0) {
+        return 1;
+    }
+
+    if (__cache_super_global[array_index] != NULL && strcmp(__cache_super_global[array_index], value) == 0) {
+        return 0;
+    }
+
+    __cache_super_global[array_index] = (char *)emalloc(strlen(value)+1);
+    snprintf(__cache_super_global[array_index], strlen(value)+1, "%s", value);
+
+    return 1;
+}
+
 static void _dump_superglobal(char *name) {
     zend_auto_global    *auto_global;
     char                *tag_name_open;
     char                *tag_name_close;
     int                 len;
     char                *dump_string;
+    int                 is_log_save = 1;
 
     len = strlen(name) + 4;
     tag_name_open = (char*)emalloc(len);
@@ -132,15 +168,27 @@ static void _dump_superglobal(char *name) {
     // This fetches:
     zval** arr;
     if (zend_hash_find(&EG(symbol_table), name, strlen(name) + 1, (void**)&arr) != FAILURE) {
-        dump_string = _var_export(*arr);
-        save_log(dump_string, 2);
+        if (zend_hash_num_elements(Z_ARRVAL_P(*arr))) {
+            dump_string = _var_export(*arr);
+
+            // check for diff GET:
+            if (is_super_global_change(name, dump_string)) {
+                is_log_save = 1;
+            }
+            else {
+                is_log_save = 0;
+            }
+
+            if (is_log_save) {
+                save_log(dump_string, 2);
+            }
+        }
     }
 
     save_log(tag_name_close, 1);
 
     efree(tag_name_open);
     efree(tag_name_close);
-    //efree(dump_string);
 }
 
 static void dump_superglobal() {
@@ -154,15 +202,15 @@ static void dump_superglobal() {
     _dump_superglobal("_SESSION");
     _dump_superglobal("_GET");
     _dump_superglobal("_POST");
-    _dump_superglobal("_REQUEST");
+    //_dump_superglobal("_REQUEST");
     _dump_superglobal("_COOKIE");
 
     save_log("</SUPERGLOBALS>", 0);
 }
 
 static void save_func_call(char *func_name, char *file_name, char *dest_file_name, int line, zend_execute_data *data) {
-    char    buff[20] = {0};
     char    open_tag[100] = {0};
+    char    file_open_tag[100] = {0};
 
     void **p_args;
     int arg_count;
@@ -172,21 +220,20 @@ static void save_func_call(char *func_name, char *file_name, char *dest_file_nam
     gettimeofday(&time, NULL);
     long microsec = ((unsigned long long)time.tv_sec * 1000000) + time.tv_usec;
     sprintf (open_tag, "<FUNC_CALL timestamp=\"%llu\">", microsec);
+    sprintf (file_open_tag, "<FILE line=\"%i\">", line);
 
-    sprintf (buff, "%i", line);
     save_log(open_tag, 0);
         save_log("<NAME>", 1);
             save_log(func_name, 2);
         save_log("</NAME>", 1);
-        save_log("<FILE>", 1);
+        save_log(file_open_tag, 1);
             save_log(file_name, 2);
         save_log("</FILE>", 1);
          save_log("<FILE_S>", 1);
-            save_log(dest_file_name, 2);
+            if (strcmp(file_name, dest_file_name) != 0) {
+                save_log(dest_file_name, 2);
+            }
         save_log("</FILE_S>", 1);
-        save_log("<LINE>", 1);
-            save_log(buff, 2);
-        save_log("</LINE>", 1);
 
     // extract arg of func
     if (data) {
@@ -248,6 +295,14 @@ static void log_end() {
         g_log_file = NULL;
     }
     efree(_file_path);
+
+    // очистка инкрементального буффера суперглобалов
+    int i;
+    for (i=0; i<10; i++) {
+        if (__cache_super_global[i]) {
+            efree(__cache_super_global[i]);
+        }
+    }
 }
 
 
