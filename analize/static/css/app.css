@@ -48,3 +48,15 @@ body {
 	display: block;
 	background: #b1a4ff;
 }
+
+.component.time-line-bar {
+	position: absolute;
+	top: 0;
+	left: 25%;
+	width: 15px;
+}
+.component.time-line-bar .bar-section {
+	position: absolute;
+	width: 100%;
+	left: 0;
+}

@@ -40,7 +40,7 @@ class Func_list
 				'file'	=> 		trim((string)$fnc->FILE),
 				'is_entry' => 	$is_entry,
 				'is_include' => $is_include,
-				'line' 		=> 	(int)trim($fnc->LINE),
+				'line' 		=> 	(int)trim($fnc->FILE->attributes()->line),
 			);
 		}
 
