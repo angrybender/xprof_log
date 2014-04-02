@@ -45,40 +45,37 @@ static char *addslashes(char *str_buff) {
 
 char *_log_path;
 char _log_file_name[150] = {0};
+char *_file_path;
 static int _is_start = 1;
 FILE        *g_log_file;
 
 static void save_log(char *str_buff, int indent) {
-    //php_stream *stream;
-
     int         i, len;
-    char        *file_path;
 
     indent++;
     if (_is_start == 1) {
         _is_start = 0;
         _set_log_file_name();
+
+        len = strlen(_log_path) + strlen(_log_file_name) + 1;
+        _file_path = (char *)emalloc(len);
+        snprintf(_file_path, len, "%s%s", _log_path, _log_file_name);
+
         save_log("<?xml version=\"1.0\" encoding=\"utf-8\" ?>", -1);
         save_log("<ROOT>", -1);
     }
 
-    len = strlen(_log_path) + strlen(_log_file_name) + 1;
-    file_path = (char *)emalloc(len);
-    snprintf(file_path, len, "%s%s", _log_path, _log_file_name);
-
     if (g_log_file == NULL) {
-        g_log_file = fopen(file_path, "a+");
+        g_log_file = fopen(_file_path, "a+");
     }
 
     // отступы для красоты
     for (i = 0; i < indent; i++) {
-        fwrite("\t", 1, 1, g_log_file);
+        fprintf(g_log_file, "%s", "\t");
     }
 
-    fwrite(str_buff, 1, strlen(str_buff), g_log_file);
-    fwrite("\n", 1, 1, g_log_file);
-
-    efree(file_path);
+    fprintf(g_log_file, "%s", str_buff);
+    fprintf(g_log_file, "%s", "\n");
 }
 
 static char *_var_export(zval *element) {
@@ -230,6 +227,10 @@ void _set_log_file_name(char *fname) {
         }
     }
 
+    for (i=0; i<strlen(_log_file_name); i++) {
+        _log_file_name[i] = '\0';
+    }
+
     snprintf(_log_file_name, 120, "profiler_%s.txt", name);
 }
 
@@ -242,7 +243,12 @@ static void set_start() {
 
 static void log_end() {
     save_log("</ROOT>", -1);
-    fclose(g_log_file);
+    if (g_log_file) {
+        fflush(g_log_file);
+        fclose(g_log_file);
+        g_log_file = NULL;
+    }
+    efree(_file_path);
 }
 
 

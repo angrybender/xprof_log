@@ -121,7 +121,7 @@ typedef unsigned int uint32;
 typedef unsigned char uint8;
 #endif
 
-static int __version = 40;
+static int __version = 43;
 
 /**
  * *****************************
@@ -1818,6 +1818,7 @@ static void hp_begin(long level, long xhprof_flags TSRMLS_DC) {
 
     set_log_path(INI_STR("xhprof.dump_dir"));
     save_func_call("<ENTRY_POINT />", zend_get_executed_filename(TSRMLS_C), zend_get_executed_filename(TSRMLS_C), 0, NULL);
+    //save_log("<ENTRY_POINT />", 0);
 
   if (!hp_globals.enabled) {
     int hp_profile_flag = 1;
