@@ -1001,8 +1001,6 @@ static void hp_log_function_call(zend_op_array *ops TSRMLS_DC) {
 
     data = EG(current_execute_data);
 
-    dump_superglobal();
-
     if (data) {
         /* shared meta data for function on the call stack */
         curr_func = data->function_state.function;

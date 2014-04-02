@@ -163,7 +163,7 @@ static void _dump_superglobal(char *name) {
     tag_name_close = (char*)emalloc(len);
     snprintf(tag_name_close, len, "</%s>", name);
 
-    save_log(tag_name_open, 1);
+    save_log(tag_name_open, 2);
 
     // This fetches:
     zval** arr;
@@ -180,19 +180,19 @@ static void _dump_superglobal(char *name) {
             }
 
             if (is_log_save) {
-                save_log(dump_string, 2);
+                save_log(dump_string, 3);
             }
         }
     }
 
-    save_log(tag_name_close, 1);
+    save_log(tag_name_close, 2);
 
     efree(tag_name_open);
     efree(tag_name_close);
 }
 
 static void dump_superglobal() {
-    save_log("<SUPERGLOBALS>", 0);
+    save_log("<SUPERGLOBALS>", 1);
 
     if (is_first_dump) {
         _dump_superglobal("_SERVER");
@@ -205,7 +205,7 @@ static void dump_superglobal() {
     //_dump_superglobal("_REQUEST");
     _dump_superglobal("_COOKIE");
 
-    save_log("</SUPERGLOBALS>", 0);
+    save_log("</SUPERGLOBALS>", 1);
 }
 
 static void save_func_call(char *func_name, char *file_name, char *dest_file_name, int line, zend_execute_data *data) {
@@ -223,6 +223,9 @@ static void save_func_call(char *func_name, char *file_name, char *dest_file_nam
     sprintf (file_open_tag, "<FILE line=\"%i\">", line);
 
     save_log(open_tag, 0);
+
+        dump_superglobal();
+
         save_log("<NAME>", 1);
             save_log(func_name, 2);
         save_log("</NAME>", 1);
