@@ -1,0 +1,2 @@
+*.php
+!origin_db.php
