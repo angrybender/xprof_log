@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `xhp_profiler`.`functions_call` (
   `timestamp` DOUBLE NULL DEFAULT NULL,
   `file` INT(11) NULL DEFAULT NULL,
   `line` INT(11) NULL DEFAULT NULL,
+  `name` VARCHAR(1000) NULL,
   `dump` INT(11) NULL DEFAULT NULL)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
