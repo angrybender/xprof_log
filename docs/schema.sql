@@ -32,7 +32,7 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
 COLLATE = utf8_general_ci;
 
-CREATE TABLE IF NOT EXISTS `xhp_profiler`.`var_sources` (
+CREATE TABLE IF NOT EXISTS `xhp_profiler`.`var_parsed` (
 	`id_sources` INT(11) not null primary key auto_increment,
 	`var` INT NULL,
 	`assoc_key` VARCHAR(1000) NULL,
