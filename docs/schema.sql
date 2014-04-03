@@ -32,3 +32,13 @@ CREATE TABLE IF NOT EXISTS `xhp_profiler`.`vars_dump` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
 COLLATE = utf8_general_ci;
+
+CREATE TABLE IF NOT EXISTS `mydb`.`var_sources` (
+	`id_sources` INT NOT NULL AUTO_INCREMENT,
+	`id_var` INT NULL,
+	`value` MEDIUMTEXT NULL,
+	PRIMARY KEY (`id_sources`),
+	INDEX `value_of_value_idx` (`id_var` ASC))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8
+COLLATE = utf8_general_ci;
