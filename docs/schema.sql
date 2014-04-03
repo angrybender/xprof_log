@@ -23,22 +23,19 @@ DEFAULT CHARACTER SET = utf8
 COLLATE = utf8_general_ci;
 
 CREATE TABLE IF NOT EXISTS `xhp_profiler`.`vars_dump` (
-  `var_id` INT(11) not null primary key auto_increment,
-  `function` INT(11) NULL DEFAULT NULL,
-  `type` VARCHAR(20) NULL DEFAULT NULL,
-  `assoc_key` VARCHAR(1000) NULL DEFAULT NULL,
-  `assoc_value` MEDIUMTEXT NULL DEFAULT NULL,
-  `source` MEDIUMTEXT NULL DEFAULT NULL)
+	`var_id` INT not null primary key auto_increment,
+	`function` INT NULL,
+	`type` VARCHAR(20) NULL,
+	`source` MEDIUMTEXT NULL)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
 COLLATE = utf8_general_ci;
 
 CREATE TABLE IF NOT EXISTS `xhp_profiler`.`var_sources` (
-	`id_sources` INT NOT NULL AUTO_INCREMENT,
-	`id_var` INT NULL,
-	`value` MEDIUMTEXT NULL,
-	PRIMARY KEY (`id_sources`),
-	INDEX `value_of_value_idx` (`id_var` ASC))
+	`id_sources` INT(11) not null primary key auto_increment,
+	`var` INT NULL,
+	`assoc_key` VARCHAR(1000) NULL,
+	`assoc_value` MEDIUMTEXT NULL)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
 COLLATE = utf8_general_ci;
