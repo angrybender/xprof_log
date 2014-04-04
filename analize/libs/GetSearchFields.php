@@ -7,7 +7,7 @@
 class SearchFields
 {
 	public static $available_fields = array(
-		'SUPERGLOBALS' => array(
+		'SUPERGLOBALS' => array(   // todo
 			'_SERVER' 	=> 'vector',
 			'_SESSION' 	=> 'vector',
 			'_GET' 		=> 'vector',
@@ -17,7 +17,7 @@ class SearchFields
 		'FUNC_CALL' => array(
 			'NAME' 		=> 'scalar',
 			'FILE' 		=> 'scalar',
-			'FILE_S' 	=> 'scalar',
+			'FILE_S' 	=> 'scalar', // todo
 			'ARG' 		=> 'any'
 		)
 	);
