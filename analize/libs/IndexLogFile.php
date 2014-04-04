@@ -54,7 +54,6 @@ class IndexLogFile {
 	protected function index_functions_call()
 	{
 		$function = null;
-		$callback = $this->on_index_progress;
 		foreach ($this->parsed_file as $i => $calle) {
 			$function = \Models\FunctionsCall::create(array(
 				'timestamp' 	=> $calle['time'],
@@ -67,12 +66,12 @@ class IndexLogFile {
 			$this->add_function_args($function->id_function, $calle['args']);
 
 			if ($this->on_index_progress) {
-				$callback($i, count($this->parsed_file));
+				call_user_func_array($this->on_index_progress, array($i, count($this->parsed_file)));
 			}
 		}
 
 		if ($this->on_index_progress) {
-			$callback(count($this->parsed_file), count($this->parsed_file));
+			call_user_func_array($this->on_index_progress, array(count($this->parsed_file), count($this->parsed_file)));
 		}
 	}
 
