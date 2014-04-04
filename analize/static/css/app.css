@@ -74,4 +74,34 @@ body {
 	position: fixed;
 	left: 10px;
 	top: 10px;
+	z-index: 100;
+}
+
+.component.form-filter-log {
+	left: 10px;
+	top: 0;
+	right: 10px;
+	position: fixed;
+	background: #fff;
+	box-shadow: 0 0 5px #ddd;
+	padding: 20px;
+	z-index: 110;
+	display: none;
+}
+
+.component.form-filter-log  .control-label {
+	width: auto;
+}
+.component.form-filter-log .width-half {
+	width: 40%;
+	display: inline-block;
+}
+
+.component.form-filter-log .arg-sub-form select {
+	display: inline-block;
+	width: 40%;
+}
+.component.form-filter-log .arg-sub-form label {
+	width: 100px;
+	vertical-align: middle;
 }

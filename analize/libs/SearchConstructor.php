@@ -12,8 +12,8 @@ class SearchDumpConstructor {
 	protected $conditions = array(
 		'function_name' => array(),
 		'function_line' => array(),
-		'call_file' => null,
-		'entry_file' => array(),
+		'call_file' => array(),
+		'entry_file' => null,
 		'time' => array(
 			'from' 	=> 0,
 			'to'	=> 0

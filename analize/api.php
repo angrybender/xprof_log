@@ -5,9 +5,10 @@
  */
 
 $routes = array(
-	'func_list' => array('func_list'),
-	'get_php_file_view' => array('get_php_file_view'),
-	'file_list' => array('file_list'),
+	'func_list' 			=> array('func_list'),
+	'get_php_file_view' 	=> array('get_php_file_view'),
+	'file_list' 			=> array('file_list'),
+	'file_filter' 			=> array('file_filter'),
 );
 
 $action = isset($_GET['method']) ? $_GET['method'] : '';
