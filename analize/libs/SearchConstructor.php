@@ -108,10 +108,10 @@ class SearchDumpConstructor {
 		foreach ($this->conditions['arg'] as $arg) {
 			$arg['value'] = mysql_real_escape_string(addslashes($arg['value']));
 			if ($arg['type'] === 'scalar') {
-				$where[] = "vars_parsed.assoc_value LIKE '%{$arg['value']}%' AND vars_parsed.assoc_key IS NULL AND vars_dump.type = 'arg_{$arg['number']}'";
+				$where[] = "(vars_parsed.assoc_value LIKE '%{$arg['value']}%' AND vars_parsed.assoc_key IS NULL AND vars_dump.type = 'arg_{$arg['number']}')";
 			}
 			else {
-				$where[] = "vars_parsed.assoc_value LIKE '%{$arg['value']}%' AND vars_parsed.assoc_key = '{$arg['key']}' vars_dump.type = 'arg_{$arg['number']}'";
+				$where[] = "(vars_parsed.assoc_value LIKE '%{$arg['value']}%' AND vars_parsed.assoc_key = '{$arg['key']}' vars_dump.type = 'arg_{$arg['number']}')";
 			}
 		}
 
